@@ -345,3 +345,16 @@ val RsExpr.isTailExpr: Boolean
         val parent = parent
         return parent is RsExprStmt && parent.isTailStmt
     }
+
+val RsExpr.hasSideEffects: Boolean
+    get() = when (this) {
+        is RsUnitExpr, is RsLitExpr, is RsPathExpr -> false
+        is RsParenExpr -> expr?.hasSideEffects ?: false
+        is RsCastExpr -> expr.hasSideEffects
+        is RsDotExpr -> expr.hasSideEffects || methodCall != null
+        is RsTupleExpr -> exprList.any { it.hasSideEffects }
+        is RsStructLiteral -> structLiteralBody.structLiteralFieldList.any { it.expr?.hasSideEffects ?: false }
+        is RsBinaryExpr -> exprList.any { it.hasSideEffects }
+        is RsUnaryExpr -> expr?.hasSideEffects ?: false
+        else -> true
+    }
