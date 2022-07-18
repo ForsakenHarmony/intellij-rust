@@ -20,7 +20,6 @@ import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ex.ProjectEx
-import com.intellij.openapi.roots.ContentEntry
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.roots.ProjectFileIndex
@@ -640,7 +639,7 @@ private fun setupProjectRoots(project: Project, cargoProjects: List<CargoProject
                         .filter { it.origin == PackageOrigin.WORKSPACE }
 
                     for (pkg in workspacePackages) {
-                        pkg.contentRoot?.setupContentRoots(project, ContentEntry::setup)
+                        pkg.contentRoot?.setupContentRoots(project, ContentEntryWrapper::setup)
                     }
                 }
             }
@@ -648,13 +647,14 @@ private fun setupProjectRoots(project: Project, cargoProjects: List<CargoProject
     }
 }
 
-private fun VirtualFile.setupContentRoots(project: Project, setup: ContentEntry.(VirtualFile) -> Unit) {
+private fun VirtualFile.setupContentRoots(project: Project, setup: ContentEntryWrapper.(VirtualFile) -> Unit) {
     val packageModule = ModuleUtilCore.findModuleForFile(this, project) ?: return
     setupContentRoots(packageModule, setup)
 }
 
-private fun VirtualFile.setupContentRoots(packageModule: Module, setup: ContentEntry.(VirtualFile) -> Unit) {
+private fun VirtualFile.setupContentRoots(packageModule: Module, setup: ContentEntryWrapper.(VirtualFile) -> Unit) {
     ModuleRootModificationUtil.updateModel(packageModule) { rootModel ->
-        rootModel.contentEntries.singleOrNull()?.setup(this)
+        val contentEntry = rootModel.contentEntries.singleOrNull() ?: return@updateModel
+        ContentEntryWrapper(contentEntry).setup(this)
     }
 }
